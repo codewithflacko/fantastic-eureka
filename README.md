@@ -1,96 +1,148 @@
-# 🚍 School Bus App
+# 🚌 SchoolTransportAI
 
-A SwiftUI-based iOS application designed to simulate and manage school bus routes, drivers, and navigation. This project focuses on building foundational iOS development skills while incorporating real-world concepts like route management and UI navigation.
+![Platform](https://img.shields.io/badge/platform-iOS-blue)
+![SwiftUI](https://img.shields.io/badge/SwiftUI-Framework-orange)
+![Status](https://img.shields.io/badge/status-In%20Progress-yellow)
+![License](https://img.shields.io/badge/license-MIT-green)
 
----
-
-## 📱 Overview
-
-The School Bus App is an iOS application built using **SwiftUI** and **MapKit** that allows users to view bus routes, driver assignments, and navigate through a clean, modern interface.
-
-This project is part of my journey learning iOS development and building production-ready applications.
+**Smart, efficient, and transparent school transportation for modern districts.**
 
 ---
 
-## 🚀 Features
+## 🚀 Overview
 
-- 🚌 View multiple bus routes
-- 👨‍✈️ Display driver assignments for each route
-- 🧭 Navigation using `NavigationStack`
-- 🎨 Clean and responsive SwiftUI interface
-- 🗺️ Map integration using MapKit (in progress)
+SchoolTransportAI is an iOS application designed to optimize school bus operations, reduce fuel costs, and improve communication between schools, parents, and communities.
+
+This project focuses on modernizing how public school transportation systems operate by introducing real-time visibility, smarter routing, and better tools for administrators.
+
+---
+
+## 🎯 Mission
+
+- ⛽ Reduce fuel consumption and operational costs  
+- 🗺️ Improve route efficiency and planning  
+- 👨‍👩‍👧 Provide real-time visibility for parents  
+- 🏫 Empower school administrators with better tools  
+- 🌎 Support more sustainable and connected communities  
+
+---
+
+## ❗ Problem
+
+Many school transportation systems today:
+- Rely on inefficient routing
+- Lack real-time tracking for parents
+- Provide minimal visibility for administrators
+- Use outdated or manual workflows
+
+---
+
+## 💡 Solution
+
+SchoolTransportAI provides a centralized platform that:
+
+- 🗺️ Displays bus routes and map views  
+- 📍 Shows upcoming stops in real time  
+- 👥 Tracks student count on each bus  
+- 📲 Improves communication between schools and parents  
+- ⛽ Optimizes routes to reduce fuel usage and emissions  
+
+---
+
+## 📱 Features
+
+### ✅ Current
+- Bus route list view  
+- Driver and route details  
+- Student count tracking  
+- Map integration (MapKit)  
+- Next stop preview  
+
+### 🔜 Planned
+- Real-time GPS tracking  
+- Parent notifications (ETA, delays, arrivals)  
+- AI-powered route optimization  
+- Admin dashboard for districts  
+- Bus capacity analytics  
+- Emergency alert system  
+
+---
+
+## 🧠 Impact
+
+This project is designed to create real-world value:
+
+- **Schools:** Lower transportation costs  
+- **Parents:** Peace of mind with real-time updates  
+- **Students:** Safer and more reliable transportation  
+- **Communities:** Reduced emissions and smarter infrastructure  
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Language:** Swift  
-- **Frameworks:** SwiftUI, MapKit  
-- **Architecture:** MVVM (in progress)  
-- **Tools:** Xcode, Git, GitHub  
+- **SwiftUI** – UI development  
+- **MapKit** – Map and route visualization  
+- **Xcode** – Development environment  
+
+### 🔮 Planned Integrations
+- Firebase (real-time database & notifications)  
+- AI/ML for route optimization  
 
 ---
 
-## 📸 Screenshots
+## 📸 Demo
 
-<!-- Add screenshots here later -->
-<!-- Example:
-![Home Screen](link-to-image)
--->
+> Add screenshots or a short demo video here  
+> *(Highly recommended for portfolio visibility)*
 
 ---
 
-## 📂 Project Structure
----
+## 🧪 Development Progress
 
-SchoolBusApp/
-├── Models/
-│ └── BusRoute.swift
-├── Views/
-│ ├── ContentView.swift
-│ └── RouteDetailView.swift
-├── ViewModels/ (coming soon)
-├── Assets/
-└── SchoolBusAppApp.swift
+This project is being built in structured daily iterations:
 
-## 🎯 Goals for This Project
-
-- [ ] Implement full MapKit route visualization  
-- [ ] Add real-time tracking simulation  
-- [ ] Improve UI/UX design  
-- [ ] Introduce data persistence  
-- [ ] Build out MVVM architecture  
+- Day 1–5: Core UI and navigation  
+- Day 6–10: Route views, map integration, data models  
+- 🔄 Ongoing: Feature expansion and backend integration  
 
 ---
 
-## 🧠 What I Learned
+## 📌 Future Goals
 
-- How to structure a SwiftUI application  
-- Using `NavigationStack` for screen transitions  
-- Creating and managing data models in Swift  
-- Debugging UI and state-related issues  
-- Integrating MapKit into an iOS app  
+- Launch a functional MVP  
+- Implement real-time tracking  
+- Pilot with schools or districts  
+- Scale into a full transportation platform  
 
 ---
 
-## 🔮 Future Improvements
+## 🤝 Contributing
 
-- Live bus tracking  
-- User authentication (students/drivers)  
-- Notifications for route updates  
-- Backend integration (Firebase or API)
+Currently a personal project, but open to collaboration in the future.
 
 ---
 
 ## 👤 Author
 
 **Flacko Farquharson**  
-QA Engineer @ Apple | Aspiring iOS Developer  
+Creative Developer | Content Creator  
 
-- 🔗 LinkedIn: https://www.linkedin.com/in/flackofarquharson/
+- Building at the intersection of **technology, storytelling, and community**
+- Documenting the journey of becoming a developer  
 
 ---
 
 ## ⭐️ Support
 
-If you found this project helpful or interesting, feel free to ⭐️ the repo and follow my journey!
+If you believe in this project:
+
+- Star the repo ⭐️  
+- Share feedback  
+- Follow the journey  
+
+---
+
+## 🔥 Why This Matters
+
+This is more than just an app — it's about **modernizing public school transportation** and building systems that better serve students, families, and communities.
