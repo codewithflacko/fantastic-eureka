@@ -8,17 +8,15 @@
 import SwiftUI
 import MapKit
 
-// MARK: - Stop Model
 struct BusStop: Identifiable {
     let id = UUID()
     let name: String
-    let eta: String
-    let studentsWaiting: Int
-    let isCompleted: Bool
-    let isCurrent: Bool
+    var eta: String
+    var studentsWaiting: Int
+    var isCompleted: Bool
+    var isCurrent: Bool
 }
 
-// MARK: - Route Model
 struct BusRoute: Identifiable {
     let id = UUID()
     let name: String
@@ -26,10 +24,9 @@ struct BusRoute: Identifiable {
     var status: String
     var studentsOnBus: Int
     var nextStop: String
-    let stops: [BusStop]
+    var stops: [BusStop]
     let coordinate: CLLocationCoordinate2D
 }
-
 // MARK: - Routes View
 struct RoutesView: View {
     

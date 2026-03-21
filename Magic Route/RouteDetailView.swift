@@ -33,6 +33,27 @@ struct RouteDetailView: View {
         return Double(completedStops) / Double(totalStops)
     }
     
+    func advanceToNextStop() {
+        guard let currentIndex = route.stops.firstIndex(where: { $0.isCurrent }) else { return }
+        
+        route.stops[currentIndex].isCurrent = false
+        route.stops[currentIndex].isCompleted = true
+        route.stops[currentIndex].eta = "Completed"
+        route.studentsOnBus += route.stops[currentIndex].studentsWaiting
+        route.stops[currentIndex].studentsWaiting = 0
+        
+        let nextIndex = currentIndex + 1
+        
+        if nextIndex < route.stops.count {
+            route.stops[nextIndex].isCurrent = true
+            route.nextStop = route.stops[nextIndex].name
+            route.status = "In Route"
+        } else {
+            route.nextStop = "Route Complete"
+            route.status = "On Time"
+        }
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -120,6 +141,30 @@ struct RouteDetailView: View {
                         StatusButton(title: "Delayed", color: .red, selected: route.status == "Delayed") {
                             route.status = "Delayed"
                         }
+                    }
+                }
+                .padding()
+                .background(Color.white)
+                .cornerRadius(20)
+                .shadow(radius: 4)
+                .padding(.horizontal)
+                
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Route Controls")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Button(action: advanceToNextStop) {
+                        HStack {
+                            Image(systemName: "arrow.right.circle.fill")
+                            Text("Advance to Next Stop")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                 }
                 .padding()
