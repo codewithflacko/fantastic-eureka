@@ -11,37 +11,45 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.blue.opacity(0.1)
-                    .ignoresSafeArea()
+                LinearGradient(
+                    colors: [.blue.opacity(0.2), .white],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
 
-                VStack(spacing: 25) {
+                VStack(spacing: 24) {
+                    Spacer()
+
                     Image(systemName: "bus.fill")
                         .font(.system(size: 80))
                         .foregroundColor(.blue)
 
-                    Text("Welcome to Magic Route")
+                    Text("Magic Route")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .multilineTextAlignment(.center)
 
-                    Text("Track your school bus routes in real time")
+                    Text("Helping schools, parents, and districts track bus routes in real time.")
                         .font(.headline)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
 
-                    NavigationLink(destination: RoutesView()) {
-                        Text("View Routes")
+                    NavigationLink(destination: RoutesListView()) {
+                        Text("View Bus Routes")
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.blue)
-                            .cornerRadius(12)
+                            .cornerRadius(16)
+                            .padding(.horizontal, 30)
                     }
-                    .padding(.horizontal, 30)
+
+                    Spacer()
                 }
-                .padding()
             }
+            .navigationBarHidden(true)
         }
     }
 }
