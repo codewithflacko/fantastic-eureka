@@ -10,7 +10,7 @@ import SwiftUI
 struct MainAppView: View {
     let user: AppUser
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var routeManager = RouteSimulationManager()
+    @StateObject private var routeManager = RouteSimulationManager(route: sampleRoute)
 
     var body: some View {
         NavigationStack {
@@ -27,6 +27,7 @@ struct MainAppView: View {
                 case .driver:
                     DriverHomeView(user: user, onLogout: {
                         dismiss()
+                
                     })
                 }
             }

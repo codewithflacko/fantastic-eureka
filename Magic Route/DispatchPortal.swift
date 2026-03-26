@@ -6,281 +6,307 @@
 //
 
 import SwiftUI
-import MapKit
 
 struct DispatcherHomeView: View {
     let user: AppUser
     let onLogout: () -> Void
 
-    @EnvironmentObject private var routeManager: RouteSimulationManager
-
     @State private var selectedFilter: RouteFilter = .all
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 32.7157, longitude: -117.1611),
-        span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-    )
 
-    enum RouteFilter: String, CaseIterable {
-        case all = "All"
-        case onTime = "On Time"
-        case delayed = "Delayed"
-        case inRoute = "In Route"
-        case paused = "Paused"
-        case arrived = "Arrived"
+    private var routes: [BusRoute] {
+        sampleRoutes
     }
 
-    var filteredRoutes: [FleetRoute] {
+    private var filteredRoutes: [BusRoute] {
         switch selectedFilter {
         case .all:
-            return routeManager.liveFleetRoutes
+            return routes
         case .onTime:
-            return routeManager.liveFleetRoutes.filter { $0.status == "On Time" }
-        case .delayed:
-            return routeManager.liveFleetRoutes.filter { $0.status == "Delayed" }
+            return routes.filter { $0.status.lowercased() == "on time" }
         case .inRoute:
-            return routeManager.liveFleetRoutes.filter { $0.status == "In Route" }
+            return routes.filter { $0.status.lowercased() == "in route" }
         case .paused:
-            return routeManager.liveFleetRoutes.filter { $0.status == "Paused" }
+            return routes.filter { $0.status.lowercased() == "paused" }
+        case .delayed:
+            return routes.filter { $0.status.lowercased() == "delayed" }
         case .arrived:
-            return routeManager.liveFleetRoutes.filter { $0.status == "Arrived" }
+            return routes.filter {
+                $0.status.lowercased() == "arrived" ||
+                $0.status.lowercased() == "arrived at school"
+            }
         }
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                headerSection
-                summarySection
-                mapSection
-                alertsSection
-                filtersSection
-                liveRoutesSection
+            VStack(spacing: 20) {
+
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Dispatcher Portal")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+
+                        Text("Welcome, \(user.name)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        Text("Monitor all active bus routes")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button(action: onLogout) {
+                        Text("Logout")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.red.opacity(0.12))
+                            .foregroundColor(.red)
+                            .cornerRadius(12)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Fleet overview
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Fleet Overview")
+                        .font(.headline)
+
+                    HStack(spacing: 12) {
+                        summaryCard(title: "All", count: routes.count, color: .gray)
+                        summaryCard(
+                            title: "On Time",
+                            count: routes.filter { $0.status.lowercased() == "on time" }.count,
+                            color: .green
+                        )
+                        summaryCard(
+                            title: "Delayed",
+                            count: routes.filter { $0.status.lowercased() == "delayed" }.count,
+                            color: .red
+                        )
+                    }
+
+                    HStack(spacing: 12) {
+                        summaryCard(
+                            title: "In Route",
+                            count: routes.filter { $0.status.lowercased() == "in route" }.count,
+                            color: .blue
+                        )
+                        summaryCard(
+                            title: "Paused",
+                            count: routes.filter { $0.status.lowercased() == "paused" }.count,
+                            color: .yellow
+                        )
+                        summaryCard(
+                            title: "Arrived",
+                            count: routes.filter {
+                                $0.status.lowercased() == "arrived" ||
+                                $0.status.lowercased() == "arrived at school"
+                            }.count,
+                            color: .purple
+                        )
+                    }
+                }
+                .padding()
+                .background(Color.white)
+                .cornerRadius(20)
+                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+
+                // Filters
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Filters")
+                        .font(.headline)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            filterChip(.all, title: "All")
+                            filterChip(.onTime, title: "On Time")
+                            filterChip(.inRoute, title: "In Route")
+                            filterChip(.paused, title: "Paused")
+                            filterChip(.delayed, title: "Delayed")
+                            filterChip(.arrived, title: "Arrived")
+                        }
+                    }
+                }
+                .padding()
+                .background(Color.white)
+                .cornerRadius(20)
+                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+
+                // Route list
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Route Status")
+                        .font(.headline)
+
+                    if filteredRoutes.isEmpty {
+                        Text("No routes match this filter.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(filteredRoutes) { route in
+                            NavigationLink(destination: RouteDetailView(route: route)) {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(route.name)
+                                                .font(.title3)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.primary)
+
+                                            Text("Driver: \(route.driver)")
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        VStack(alignment: .trailing, spacing: 8) {
+                                            Text(route.status)
+                                                .font(.caption)
+                                                .fontWeight(.semibold)
+                                                .padding(.horizontal, 10)
+                                                .padding(.vertical, 6)
+                                                .background(statusColor(for: route.status).opacity(0.15))
+                                                .foregroundColor(statusColor(for: route.status))
+                                                .cornerRadius(10)
+
+                                            Image(systemName: "chevron.right")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Next Stop")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+
+                                            Text(route.nextStop)
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.primary)
+                                        }
+
+                                        Spacer()
+
+                                        VStack(alignment: .trailing, spacing: 4) {
+                                            Text("ETA")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+
+                                            Text(route.eta)
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.primary)
+                                        }
+                                    }
+
+                                    HStack {
+                                        Text("Students: \(route.studentsOnBus)/\(route.capacity)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+
+                                        Spacer()
+
+                                        Text("Stops: \(route.stops.count)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                    }
+
+                                    ProgressView(value: route.progress)
+                                        .progressViewStyle(.linear)
+                                }
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(16)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color.white)
+                .cornerRadius(20)
+                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
             }
             .padding()
         }
         .background(Color(.systemGroupedBackground))
-        .navigationBarBackButtonHidden(true)
-        .onAppear {
-            region.center = routeManager.busCoordinate
-        }
-        .onReceive(routeManager.$busCoordinate) { newCoordinate in
-            region.center = newCoordinate
-        }
+        .navigationTitle("Dispatcher View")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var headerSection: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Dispatcher Dashboard")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-
-                Text("Welcome, \(user.name)")
-                    .foregroundColor(.secondary)
-            }
-
-            Spacer()
-
-            Button("Switch User") {
-                onLogout()
-            }
-            .font(.subheadline)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.red.opacity(0.12))
-            .cornerRadius(10)
-        }
-    }
-
-    private var summarySection: some View {
-        HStack(spacing: 12) {
-            summaryCard(
-                title: "Total Routes",
-                value: "\(routeManager.liveFleetRoutes.count)",
-                color: .blue
-            )
-
-            summaryCard(
-                title: "Delayed",
-                value: "\(routeManager.liveFleetRoutes.filter { $0.status == "Delayed" }.count)",
-                color: .red
-            )
-
-            summaryCard(
-                title: "Active",
-                value: "\(routeManager.liveFleetRoutes.filter { $0.status == "In Route" || $0.status == "On Time" }.count)",
-                color: .green
-            )
-        }
-    }
-
-    private var mapSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Route Map")
-                .font(.headline)
-
-            Map(coordinateRegion: $region)
-                .frame(height: 260)
-                .cornerRadius(16)
-        }
-    }
-
-    private var alertsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Dispatch Alerts")
-                .font(.headline)
-
-            if routeManager.dispatchAlerts.isEmpty {
-                Text("No active alerts")
-                    .foregroundColor(.secondary)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white)
-                    .cornerRadius(16)
-            } else {
-                ForEach(routeManager.dispatchAlerts) { alert in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(alert.title)
-                            .font(.headline)
-
-                        Text(alert.message)
-                            .foregroundColor(.secondary)
-
-                        Text(alert.timestamp.formatted(date: .omitted, time: .shortened))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
-                }
-            }
-        }
-    }
-
-    private var filtersSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Filters")
-                .font(.headline)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(RouteFilter.allCases, id: \.self) { filter in
-                        Button {
-                            selectedFilter = filter
-                        } label: {
-                            Text(filter.rawValue)
-                                .fontWeight(.medium)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(selectedFilter == filter ? Color.blue : Color.gray.opacity(0.15))
-                                .foregroundColor(selectedFilter == filter ? .white : .primary)
-                                .cornerRadius(12)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var liveRoutesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Live Route Status")
-                .font(.headline)
-
-            ForEach(filteredRoutes) { route in
-                dispatcherRouteCard(route: route)
-            }
-        }
-    }
-
-    private func summaryCard(title: String, value: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
-            Text(value)
+    private func summaryCard(title: String, count: Int, color: Color) -> some View {
+        VStack(spacing: 6) {
+            Text("\(count)")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(color)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
-    }
 
-    private func dispatcherRouteCard(route: FleetRoute) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(route.busNumber)
-                    .font(.headline)
-
-                Spacer()
-
-                Text(route.status)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(statusColor(route.status))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(statusColor(route.status).opacity(0.12))
-                    .cornerRadius(10)
-            }
-
-            Text("Driver: \(route.driver)")
+            Text(title)
+                .font(.caption)
                 .foregroundColor(.secondary)
-
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Next Stop")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(route.nextStop)
-                        .fontWeight(.medium)
-                }
-
-                Spacer()
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ETA")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(route.eta)
-                        .fontWeight(.medium)
-                }
-            }
         }
+        .frame(maxWidth: .infinity)
         .padding()
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+        .background(color.opacity(0.08))
+        .cornerRadius(14)
     }
 
-    private func statusColor(_ status: String) -> Color {
-        switch status {
-        case "On Time":
+    private func filterChip(_ filter: RouteFilter, title: String) -> some View {
+        Button(action: {
+            selectedFilter = filter
+        }) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(selectedFilter == filter ? Color.blue : Color.gray.opacity(0.15))
+                .foregroundColor(selectedFilter == filter ? .white : .primary)
+                .cornerRadius(12)
+        }
+    }
+
+    private func statusColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "on time":
             return .green
-        case "Delayed":
-            return .red
-        case "In Route":
+        case "in route":
             return .blue
-        case "Paused":
+        case "paused":
             return .yellow
-        case "Arrived":
-            return .green
+        case "delayed":
+            return .red
+        case "arrived", "arrived at school":
+            return .purple
         default:
             return .gray
         }
     }
 }
 
+enum RouteFilter {
+    case all
+    case onTime
+    case inRoute
+    case paused
+    case delayed
+    case arrived
+}
+
 #Preview {
     NavigationStack {
-        DispatcherHomeView(user: dispatcherUser, onLogout: {})
-            .environmentObject(RouteSimulationManager())
+        DispatcherHomeView(
+            user: AppUser(name: "Dispatcher Mike", role: .dispatcher),
+            onLogout: {}
+        )
     }
 }
