@@ -8,30 +8,29 @@
 import SwiftUI
 
 struct MainAppView: View {
-    let user: AppUser
-    @Environment(\.dismiss) private var dismiss
-    @StateObject private var routeManager = RouteSimulationManager(route: sampleRoute)
-
+    @StateObject private var simulator = RouteSimulationManager(routes: mockRoutes)
+    
     var body: some View {
-        NavigationStack {
-            Group {
-                switch user.role {
-                case .parent:
-                    ParentHomeView(user: user, onLogout: {
-                        dismiss()
-                    })
-                case .dispatcher:
-                    DispatcherHomeView(user: user, onLogout: {
-                        dismiss()
-                    })
-                case .driver:
-                    DriverHomeView(user: user, onLogout: {
-                        dismiss()
-                
-                    })
+        TabView {
+            ParentHomeView(simulator: simulator)
+                .tabItem {
+                    Label("Parent", systemImage: "person.fill")
                 }
-            }
-            .environmentObject(routeManager)
+            
+            DispatcherView(simulator: simulator)
+                .tabItem {
+                    Label("Dispatch", systemImage: "bus.doubledecker.fill")
+                }
+        }
+        .onAppear {
+            simulator.startSimulation()
+        }
+        .onDisappear {
+            simulator.stopSimulation()
         }
     }
+}
+
+#Preview {
+    MainAppView()
 }

@@ -10,198 +10,267 @@ import CoreLocation
 import Combine
 
 final class RouteSimulationManager: ObservableObject {
-    @Published var route: BusRoute
-    @Published var busCoordinate: CLLocationCoordinate2D
-    @Published var currentStopIndex: Int = 0
-    @Published var completedStopIDs: Set<UUID> = []
-    @Published var isRunning: Bool = false
-    @Published var isPaused: Bool = false
-    @Published var childOnBus: Bool = false
-    @Published var routeMessage: String = "Bus has not started yet"
-    @Published var showSchoolArrivalNotification: Bool = false
-
+    @Published var routes: [BusRoute] = []
+    
     private var timer: Timer?
-    private var stopCoordinates: [CLLocationCoordinate2D] = []
-
-    init(route: BusRoute) {
-        self.route = route
-        self.busCoordinate = route.coordinate
-        self.stopCoordinates = RouteSimulationManager.makeStopCoordinates(
-            from: route.coordinate,
-            stopCount: route.stops.count
-        )
+    
+    init(routes: [BusRoute]) {
+        self.routes = routes
     }
-
-    deinit {
-        timer?.invalidate()
-    }
-
+    
     func startSimulation() {
-        guard !route.stops.isEmpty else { return }
-        guard !isRunning else { return }
-
-        isRunning = true
-        isPaused = false
-        routeMessage = "Bus is now in route"
-
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { [weak self] _ in
-            self?.moveToNextStop()
+        stopSimulation()
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            self?.updateRoutes()
         }
     }
-
-    func pauseSimulation() {
-        guard isRunning else { return }
-        isPaused = true
-        isRunning = false
-        timer?.invalidate()
-        routeMessage = "Bus is paused"
-        updateRoute(status: "Paused")
-    }
-
-    func resumeSimulation() {
-        guard !route.stops.isEmpty else { return }
-        guard !isRunning else { return }
-
-        isPaused = false
-        isRunning = true
-        routeMessage = "Bus is moving again"
-
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { [weak self] _ in
-            self?.moveToNextStop()
-        }
-    }
-
-    func resetSimulation() {
+    
+    func stopSimulation() {
         timer?.invalidate()
         timer = nil
-
-        currentStopIndex = 0
-        completedStopIDs.removeAll()
-        isRunning = false
-        isPaused = false
-        childOnBus = false
-        showSchoolArrivalNotification = false
-        busCoordinate = route.coordinate
-        routeMessage = "Bus has not started yet"
-
-        updateRoute(
-            status: "On Time",
-            nextStop: route.stops.first?.name ?? "School",
-            eta: route.stops.first?.time ?? "TBD",
-            progress: 0.0
-        )
     }
-
-    private func moveToNextStop() {
-        guard currentStopIndex < route.stops.count else {
-            arriveAtSchool()
-            return
-        }
-
-        let stop = route.stops[currentStopIndex]
-
-        completedStopIDs.insert(stop.id)
-        childOnBus = true
-        routeMessage = "Arrived at \(stop.name)"
-
-        if currentStopIndex < stopCoordinates.count {
-            busCoordinate = stopCoordinates[currentStopIndex]
-        }
-
-        let newProgress = Double(currentStopIndex + 1) / Double(route.stops.count)
-
-        let nextStopName: String
-        let nextETA: String
-
-        if currentStopIndex + 1 < route.stops.count {
-            nextStopName = route.stops[currentStopIndex + 1].name
-            nextETA = route.stops[currentStopIndex + 1].time
-        } else {
-            nextStopName = "School"
-            nextETA = "Arriving soon"
-        }
-
-        let simulatedStudents = min(route.capacity, max(1, currentStopIndex + 1))
-
-        updateRoute(
-            status: "In Route",
-            nextStop: nextStopName,
-            eta: nextETA,
-            studentsOnBus: simulatedStudents,
-            progress: newProgress
-        )
-
-        currentStopIndex += 1
-
-        if currentStopIndex >= route.stops.count {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-                self?.arriveAtSchool()
+    
+    private func updateRoutes() {
+        for index in routes.indices {
+            guard !routes[index].isCompleted else { continue }
+            guard !routes[index].isPaused else { continue }
+            
+            let currentRoute = routes[index]
+            
+            guard currentRoute.currentStopIndex < currentRoute.stops.count else {
+                completeRoute(at: index)
+                continue
+            }
+            
+            let targetStop = currentRoute.stops[currentRoute.currentStopIndex]
+            let currentCoordinate = currentRoute.coordinate
+            let targetCoordinate = targetStop.coordinate
+            
+            let newCoordinate = moveToward(
+                from: currentCoordinate,
+                to: targetCoordinate,
+                step: 0.002
+            )
+            
+            routes[index].coordinate = newCoordinate
+            
+            let distance = distanceBetween(newCoordinate, targetCoordinate)
+            
+            if distance < 0.0015 {
+                advanceToNextStop(routeIndex: index)
+            } else {
+                if routes[index].issueMessage == nil {
+                    routes[index].status = "On Time"
+                }
+                routes[index].eta = "\(max(1, routes[index].stops.count - routes[index].currentStopIndex) * 3) min"
+                routes[index].progress = calculateProgress(for: routes[index])
             }
         }
     }
-
-    private func arriveAtSchool() {
-        timer?.invalidate()
-        timer = nil
-
-        isRunning = false
-        isPaused = false
-        childOnBus = false
-        showSchoolArrivalNotification = true
-        routeMessage = "Bus has arrived at school"
-
-        updateRoute(
-            status: "Arrived",
-            nextStop: "School",
-            eta: "Arrived",
-            studentsOnBus: route.studentsOnBus,
-            progress: 1.0
-        )
-    }
-
-    private func updateRoute(
-        status: String,
-        nextStop: String? = nil,
-        eta: String? = nil,
-        studentsOnBus: Int? = nil,
-        progress: Double? = nil
-    ) {
-        route = BusRoute(
-            name: route.name,
-            driver: route.driver,
-            status: status,
-            nextStop: nextStop ?? route.nextStop,
-            eta: eta ?? route.eta,
-            studentsOnBus: studentsOnBus ?? route.studentsOnBus,
-            capacity: route.capacity,
-            progress: progress ?? route.progress,
-            stops: route.stops,
-            coordinate: busCoordinate
-        )
-    }
-
-    private static func makeStopCoordinates(
-        from start: CLLocationCoordinate2D,
-        stopCount: Int
-    ) -> [CLLocationCoordinate2D] {
-        guard stopCount > 0 else { return [] }
-
-        var coordinates: [CLLocationCoordinate2D] = []
-
-        for index in 0..<stopCount {
-            let latOffset = 0.002 * Double(index + 1)
-            let lonOffset = 0.002 * Double(index + 1)
-
-            let coordinate = CLLocationCoordinate2D(
-                latitude: start.latitude + latOffset,
-                longitude: start.longitude + lonOffset
-            )
-
-            coordinates.append(coordinate)
+    
+    private func advanceToNextStop(routeIndex: Int) {
+        guard routeIndex < routes.count else { return }
+        
+        routes[routeIndex].currentStopIndex += 1
+        
+        if routes[routeIndex].currentStopIndex < routes[routeIndex].stops.count {
+            let next = routes[routeIndex].stops[routes[routeIndex].currentStopIndex]
+            routes[routeIndex].nextStop = next.name
+            routes[routeIndex].status = routes[routeIndex].issueMessage == nil ? "In Route" : "Delayed"
+            routes[routeIndex].progress = calculateProgress(for: routes[routeIndex])
+        } else {
+            completeRoute(at: routeIndex)
         }
-
-        return coordinates
+    }
+    
+    private func completeRoute(at index: Int) {
+        routes[index].isCompleted = true
+        routes[index].hasArrivedAtSchool = true
+        routes[index].isPaused = false
+        routes[index].issueMessage = nil
+        routes[index].status = "Completed"
+        routes[index].nextStop = "Arrived at School"
+        routes[index].eta = "Arrived"
+        routes[index].progress = 1.0
+    }
+    
+    private func calculateProgress(for route: BusRoute) -> Double {
+        guard !route.stops.isEmpty else { return 0.0 }
+        return min(Double(route.currentStopIndex) / Double(route.stops.count), 1.0)
+    }
+    
+    private func moveToward(
+        from: CLLocationCoordinate2D,
+        to: CLLocationCoordinate2D,
+        step: Double
+    ) -> CLLocationCoordinate2D {
+        let latDiff = to.latitude - from.latitude
+        let lonDiff = to.longitude - from.longitude
+        
+        let distance = sqrt((latDiff * latDiff) + (lonDiff * lonDiff))
+        
+        guard distance > step else { return to }
+        
+        let ratio = step / distance
+        
+        return CLLocationCoordinate2D(
+            latitude: from.latitude + (latDiff * ratio),
+            longitude: from.longitude + (lonDiff * ratio)
+        )
+    }
+    
+    private func distanceBetween(
+        _ a: CLLocationCoordinate2D,
+        _ b: CLLocationCoordinate2D
+    ) -> Double {
+        let latDiff = a.latitude - b.latitude
+        let lonDiff = a.longitude - b.longitude
+        return sqrt((latDiff * latDiff) + (lonDiff * lonDiff))
+    }
+    
+    func stopsAway(for route: BusRoute, childStopName: String) -> Int? {
+        guard let childIndex = route.stops.firstIndex(where: { $0.name == childStopName }) else {
+            return nil
+        }
+        
+        let remaining = childIndex - route.currentStopIndex
+        return max(remaining, 0)
+    }
+    
+    func arrivalMessage(for route: BusRoute, childStopName: String) -> String {
+        if route.hasArrivedAtSchool {
+            return "Bus has arrived at school"
+        }
+        
+        guard let stopsAway = stopsAway(for: route, childStopName: childStopName) else {
+            return "Stop not found"
+        }
+        
+        switch stopsAway {
+        case 0:
+            return "Bus is at your stop"
+        case 1:
+            return "1 stop away"
+        case 2:
+            return "2 stops away"
+        case 3:
+            return "3 stops away"
+        default:
+            return "\(stopsAway) stops away"
+        }
+    }
+    
+    func childStopIndex(for route: BusRoute, childStopName: String) -> Int? {
+        route.stops.firstIndex(where: { $0.name == childStopName })
+    }
+    
+    func hasPickedUpChild(for route: BusRoute, childStopName: String) -> Bool {
+        guard let childIndex = childStopIndex(for: route, childStopName: childStopName) else {
+            return false
+        }
+        return route.currentStopIndex > childIndex
+    }
+    
+    func stopsAwayFromChild(for route: BusRoute, childStopName: String) -> Int? {
+        guard let childIndex = childStopIndex(for: route, childStopName: childStopName) else {
+            return nil
+        }
+        
+        let remaining = childIndex - route.currentStopIndex
+        return max(remaining, 0)
+    }
+    
+    func stopsAwayFromSchoolAfterPickup(for route: BusRoute, childStopName: String) -> Int? {
+        guard let childIndex = childStopIndex(for: route, childStopName: childStopName) else {
+            return nil
+        }
+        
+        let schoolIndex = route.stops.count - 1
+        
+        guard route.currentStopIndex > childIndex else {
+            return nil
+        }
+        
+        let remaining = schoolIndex - route.currentStopIndex
+        return max(remaining, 0)
+    }
+    
+    func parentTrackingMessage(for route: BusRoute, childStopName: String) -> String {
+        if route.hasArrivedAtSchool {
+            return "Your child has arrived at school"
+        }
+        
+        guard let childIndex = childStopIndex(for: route, childStopName: childStopName) else {
+            return "Stop not found"
+        }
+        
+        if route.currentStopIndex < childIndex {
+            let remaining = childIndex - route.currentStopIndex
+            
+            switch remaining {
+            case 3:
+                return "Bus is 3 stops away"
+            case 2:
+                return "Bus is 2 stops away"
+            case 1:
+                return "Bus is 1 stop away"
+            case 0:
+                return "Bus is at your stop"
+            default:
+                return "Bus is on the way"
+            }
+        }
+        
+        if route.currentStopIndex == childIndex {
+            return "Bus is at your stop"
+        }
+        
+        let schoolIndex = route.stops.count - 1
+        let remainingToSchool = max(schoolIndex - route.currentStopIndex, 0)
+        
+        switch remainingToSchool {
+        case 0:
+            return "Your child has arrived at school"
+        case 1:
+            return "Your child is on the bus — 1 stop away from school"
+        default:
+            return "Your child is on the bus — \(remainingToSchool) stops away from school"
+        }
+    }
+    
+    func pauseRoute(routeID: UUID) {
+        guard let index = routes.firstIndex(where: { $0.id == routeID }) else { return }
+        routes[index].isPaused = true
+        routes[index].status = "Paused"
+        routes[index].eta = "Paused"
+    }
+    
+    func resumeRoute(routeID: UUID) {
+        guard let index = routes.firstIndex(where: { $0.id == routeID }) else { return }
+        routes[index].isPaused = false
+        routes[index].status = routes[index].issueMessage == nil ? "In Route" : "Delayed"
+        routes[index].eta = "\(max(1, routes[index].stops.count - routes[index].currentStopIndex) * 3) min"
+    }
+    
+    func reportIssue(routeID: UUID, message: String) {
+        guard let index = routes.firstIndex(where: { $0.id == routeID }) else { return }
+        routes[index].issueMessage = message
+        routes[index].status = "Delayed"
+        routes[index].eta = "Delayed"
+    }
+    
+    func clearIssue(routeID: UUID) {
+        guard let index = routes.firstIndex(where: { $0.id == routeID }) else { return }
+        routes[index].issueMessage = nil
+        
+        if routes[index].isCompleted {
+            routes[index].status = "Completed"
+        } else if routes[index].isPaused {
+            routes[index].status = "Paused"
+        } else {
+            routes[index].status = "In Route"
+            routes[index].eta = "\(max(1, routes[index].stops.count - routes[index].currentStopIndex) * 3) min"
+        }
     }
 }

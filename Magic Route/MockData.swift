@@ -8,77 +8,85 @@
 import Foundation
 import CoreLocation
 
-let parentUser = AppUser(name: "Flacko (Parent)", role: .parent)
-let dispatcherUser = AppUser(name: "Dispatcher Mike", role: .dispatcher)
-let driverUser = AppUser(name: "Driver Sarah", role: .driver)
-
-let sampleRoute = BusRoute(
-    name: "Route 12",
-    driver: "Driver Sarah",
-    status: "On Time",
-    nextStop: "Maple Street",
-    eta: "7:45 AM",
-    studentsOnBus: 5,
-    capacity: 20,
-    progress: 0.1,
-    stops: [
-        Stop(name: "Maple Street", time: "7:45 AM"),
-        Stop(name: "Oak Avenue", time: "7:50 AM"),
-        Stop(name: "Pine Road", time: "7:55 AM")
-    ],
-    coordinate: CLLocationCoordinate2D(
-        latitude: 33.7490,
-        longitude: -84.3880
+let routeAStops: [Stop] = [
+    Stop(
+        name: "Maple St Stop",
+        time: "7:10 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7157, longitude: -117.1611)
+    ),
+    Stop(
+        name: "Pine Ave Stop",
+        time: "7:15 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7180, longitude: -117.1580)
+    ),
+    Stop(
+        name: "Oak Lane Stop",
+        time: "7:20 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7195, longitude: -117.1560)
+    ),
+    Stop(
+        name: "Cedar Park Stop",
+        time: "7:24 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7210, longitude: -117.1525)
+    ),
+    Stop(
+        name: "Lincoln High School",
+        time: "7:30 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7225, longitude: -117.1500)
     )
-)
+]
 
-let sampleRoutes: [BusRoute] = [
-    sampleRoute,
-    BusRoute(
-        name: "Route 18",
-        driver: "Driver James",
-        status: "Delayed",
-        nextStop: "Oak Street",
-        eta: "8:05 AM",
-        studentsOnBus: 11,
-        capacity: 24,
-        progress: 0.45,
-        stops: [
-            Stop(name: "Oak Street", time: "8:05 AM"),
-            Stop(name: "Hill Drive", time: "8:10 AM"),
-            Stop(name: "School", time: "8:20 AM")
-        ],
-        coordinate: CLLocationCoordinate2D(latitude: 33.1550, longitude: -117.3450)
+let routeBStops: [Stop] = [
+    Stop(
+        name: "Sunset Dr Stop",
+        time: "7:05 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7105, longitude: -117.1650)
     ),
-    BusRoute(
-        name: "Route 22",
-        driver: "Driver Alicia",
-        status: "Paused",
-        nextStop: "Cedar Lane",
-        eta: "8:12 AM",
-        studentsOnBus: 7,
-        capacity: 20,
-        progress: 0.35,
-        stops: [
-            Stop(name: "Cedar Lane", time: "8:12 AM"),
-            Stop(name: "Birch Court", time: "8:17 AM"),
-            Stop(name: "School", time: "8:25 AM")
-        ],
-        coordinate: CLLocationCoordinate2D(latitude: 33.1620, longitude: -117.3520)
+    Stop(
+        name: "Palm Ave Stop",
+        time: "7:12 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7128, longitude: -117.1622)
     ),
+    Stop(
+        name: "Harbor Blvd Stop",
+        time: "7:18 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7148, longitude: -117.1590)
+    ),
+    Stop(
+        name: "Bayview Stop",
+        time: "7:23 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7170, longitude: -117.1558)
+    ),
+    Stop(
+        name: "Lincoln High School",
+        time: "7:30 AM",
+        coordinate: CLLocationCoordinate2D(latitude: 32.7225, longitude: -117.1500)
+    )
+]
+
+let mockRoutes: [BusRoute] = [
     BusRoute(
-        name: "Route 30",
-        driver: "Driver Nina",
+        name: "Route A",
+        driver: "Ms. Taylor",
         status: "On Time",
-        nextStop: "Palm Ave",
-        eta: "7:58 AM",
-        studentsOnBus: 15,
-        capacity: 28,
-        progress: 0.70,
-        stops: [
-            Stop(name: "Palm Ave", time: "7:58 AM"),
-            Stop(name: "School", time: "8:05 AM")
-        ],
-        coordinate: CLLocationCoordinate2D(latitude: 33.1660, longitude: -117.3400)
+        nextStop: "Maple St Stop",
+        eta: "12 min",
+        studentsOnBus: 18,
+        capacity: 30,
+        progress: 0.2,
+        stops: routeAStops,
+        coordinate: CLLocationCoordinate2D(latitude: 32.7140, longitude: -117.1630)
+    ),
+    BusRoute(
+        name: "Route B",
+        driver: "Mr. Johnson",
+        status: "On Time",
+        nextStop: "Sunset Dr Stop",
+        eta: "10 min",
+        studentsOnBus: 22,
+        capacity: 35,
+        progress: 0.1,
+        stops: routeBStops,
+        coordinate: CLLocationCoordinate2D(latitude: 32.7090, longitude: -117.1670)
     )
 ]

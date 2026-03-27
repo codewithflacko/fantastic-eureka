@@ -10,395 +10,430 @@ import MapKit
 import CoreLocation
 
 struct ParentHomeView: View {
-    let user: AppUser
-    let onLogout: () -> Void
-
-    @EnvironmentObject var routeManager: RouteSimulationManager
-
-    @State private var rideStatus: StudentRideStatus = .waiting
-    @State private var boardedTime: String? = nil
-    @State private var hasArrivedAtSchool = false
-
-    @State private var childName = "Jordan Farquharson"
-    @State private var assignedStop = "Pine Avenue"
-    @State private var pickupStop = "Pine Avenue"
-
-    @State private var busStatus = "In Route"
-    @State private var nextStop = "Pine Avenue"
-    @State private var stopsAway = 3
-
+    @ObservedObject var simulator: RouteSimulationManager
+    
+    let childName: String = "Jordan"
+    let childStopName: String = "Maple St Stop"
+    
     @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 33.1581, longitude: -117.3506),
+        center: CLLocationCoordinate2D(latitude: 32.7157, longitude: -117.1611),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
     )
-
-    private var rideStatusTitle: String {
-        switch rideStatus {
-        case .waiting:
-            return "Waiting"
-        case .boarded:
-            return "On Bus"
-        case .arrivedAtSchool:
-            return "Arrived at School"
-        case .absent:
-            return "Absent"
-        }
+    
+    var selectedRoute: BusRoute? {
+        simulator.routes.first
     }
-
-    private var rideStatusColor: Color {
-        switch rideStatus {
-        case .waiting:
-            return .orange
-        case .boarded:
-            return .green
-        case .arrivedAtSchool:
-            return .blue
-        case .absent:
-            return .red
-        }
-    }
-
+    
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-
-                // Header
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Parent Dashboard")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-
-                            Text("Welcome, \(user.name)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    if let route = selectedRoute {
+                        
+                        // MARK: - Map
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Live Bus Tracking")
+                                    .font(.headline)
+                                Spacer()
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(.green)
+                                        .frame(width: 8, height: 8)
+                                    Text("Live")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            Map(coordinateRegion: $region, annotationItems: mapItems(for: route)) { item in
+                                MapAnnotation(coordinate: item.coordinate) {
+                                    VStack(spacing: 4) {
+                                        if item.type == .bus {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.blue)
+                                                    .frame(width: 38, height: 38)
+                                                
+                                                Image(systemName: "bus.fill")
+                                                    .foregroundColor(.white)
+                                            }
+                                        } else if item.type == .childStop {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.orange)
+                                                    .frame(width: 30, height: 30)
+                                                
+                                                Image(systemName: "figure.child")
+                                                    .foregroundColor(.white)
+                                                    .font(.caption)
+                                            }
+                                        } else {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.green)
+                                                    .frame(width: 30, height: 30)
+                                                
+                                                Image(systemName: "building.2.fill")
+                                                    .foregroundColor(.white)
+                                                    .font(.caption)
+                                            }
+                                        }
+                                        
+                                        Text(item.title)
+                                            .font(.caption2)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 3)
+                                            .background(.ultraThinMaterial)
+                                            .cornerRadius(8)
+                                    }
+                                }
+                            }
+                            .frame(height: 280)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
                         }
-
-                        Spacer()
-
-                        Button(action: onLogout) {
-                            Text("Logout")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(Color.red.opacity(0.12))
-                                .foregroundColor(.red)
-                                .cornerRadius(12)
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+                        .onAppear {
+                            updateRegion(for: route)
                         }
-                    }
-
-                    Text("Track your child’s bus ride in real time.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                // Student profile card
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Student Profile")
-                        .font(.headline)
-
-                    HStack(spacing: 16) {
-                        Image("child_profile")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 78, height: 78)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.blue.opacity(0.2), lineWidth: 2)
-                            )
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(childName)
-                                .font(.title3)
-                                .fontWeight(.bold)
-
-                            Text("Assigned Stop: \(assignedStop)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-
-                            Text("Pickup Stop: \(pickupStop)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                        .onChange(of: route.coordinate.latitude) { _ in
+                            updateRegion(for: route)
                         }
-
-                        Spacer()
-                    }
-                }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(20)
-                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
-
-                // Boarding status card
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Boarding Status")
-                        .font(.headline)
-
-                    HStack {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(rideStatusTitle)
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .foregroundColor(rideStatusColor)
-
-                            if rideStatus == .boarded {
-                                Text("Driver confirmed pickup")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-
-                                if let boardedTime = boardedTime {
-                                    Text("Boarded at \(boardedTime)")
+                        .onChange(of: route.coordinate.longitude) { _ in
+                            updateRegion(for: route)
+                        }
+                        
+                        // MARK: - Child Status
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.blue.opacity(0.15))
+                                        .frame(width: 58, height: 58)
+                                    
+                                    Image(systemName: "person.fill")
+                                        .foregroundColor(.blue)
+                                        .font(.title3)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(childName)
+                                        .font(.title3)
+                                        .fontWeight(.bold)
+                                    
+                                    Text("Assigned Route: \(route.name)")
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                 }
-
-                                Text("Picked up from \(pickupStop)")
-                                    .font(.subheadline)
+                                
+                                Spacer()
+                            }
+                            
+                            Divider()
+                            
+                            Text(simulator.parentTrackingMessage(for: route, childStopName: childStopName))
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                            
+                            HStack {
+                                Label("Next Stop", systemImage: "mappin.and.ellipse")
                                     .foregroundColor(.secondary)
-
-                            } else if rideStatus == .absent {
-                                Text("Marked absent for this stop")
-                                    .font(.subheadline)
+                                Spacer()
+                                Text(route.nextStop)
+                                    .fontWeight(.medium)
+                            }
+                            
+                            HStack {
+                                Label("ETA", systemImage: "clock")
                                     .foregroundColor(.secondary)
-
-                            } else if rideStatus == .arrivedAtSchool {
-                                Text("Your child has arrived at school.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-
+                                Spacer()
+                                Text(route.eta)
+                                    .fontWeight(.medium)
+                            }
+                            
+                            if route.hasArrivedAtSchool {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.green)
+                                    Text("Your child has arrived safely at school.")
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.green)
+                                }
+                                .padding(.top, 4)
+                            } else if simulator.hasPickedUpChild(for: route, childStopName: childStopName) {
+                                HStack {
+                                    Label("Current Status", systemImage: "bus.fill")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("Child on board")
+                                        .fontWeight(.medium)
+                                }
+                                
+                                HStack {
+                                    Label("Next Stop", systemImage: "mappin.and.ellipse")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(route.nextStop)
+                                        .fontWeight(.medium)
+                                }
+                                
+                                HStack {
+                                    Label("ETA", systemImage: "clock")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(route.eta)
+                                        .fontWeight(.medium)
+                                }
                             } else {
-                                Text("Waiting to be picked up at \(assignedStop)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                HStack {
+                                    Label("Next Stop", systemImage: "mappin.and.ellipse")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(route.nextStop)
+                                        .fontWeight(.medium)
+                                }
+                                
+                                HStack {
+                                    Label("ETA", systemImage: "clock")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(route.eta)
+                                        .fontWeight(.medium)
+                                }
                             }
                         }
-
-                        Spacer()
-
-                        Text(rideStatus.rawValue)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(rideStatusColor.opacity(0.15))
-                            .foregroundColor(rideStatusColor)
-                            .cornerRadius(12)
-                    }
-                }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(20)
-                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
-
-                // Bus map
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Live Bus Location")
-                        .font(.headline)
-
-                    Map(position: .constant(.region(region))) {
-                        Marker("Bus", coordinate: region.center)
-                        Marker(
-                            "Stop",
-                            coordinate: CLLocationCoordinate2D(
-                                latitude: 33.1600,
-                                longitude: -117.3480
-                            )
-                        )
-                    }
-                    .frame(height: 230)
-                    .cornerRadius(20)
-                }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(20)
-                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
-
-                // Bus status card
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Bus Status")
-                        .font(.headline)
-
-                    HStack {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(busStatus)
-                                .font(.title3)
-                                .fontWeight(.bold)
-
-                            Text("Next Stop: \(nextStop)")
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+                        
+                        // MARK: - Progress
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Route Progress")
+                                    .font(.headline)
+                                
+                                Spacer()
+                                
+                                Text(route.status)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(statusBackgroundColor(for: route.status))
+                                    .foregroundColor(statusTextColor(for: route.status))
+                                    .cornerRadius(12)
+                            }
+                            
+                            ProgressView(value: route.progress)
+                                .progressViewStyle(.linear)
+                            
+                            Text("\(Int(route.progress * 100))% complete")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+                        
+                        // MARK: - Stops
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Route Stops")
+                                .font(.headline)
+                            
+                            ForEach(Array(route.stops.enumerated()), id: \.element.id) { index, stop in
+                                HStack(alignment: .top, spacing: 12) {
+                                    Circle()
+                                        .fill(circleColor(for: index, currentStopIndex: route.currentStopIndex, completed: route.isCompleted))
+                                        .frame(width: 12, height: 12)
+                                        .padding(.top, 5)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(stop.name)
+                                            .fontWeight(index == route.currentStopIndex && !route.isCompleted ? .bold : .regular)
+                                        
+                                        Text(stop.time)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    if route.isCompleted || index < route.currentStopIndex {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                    } else if index == route.currentStopIndex {
+                                        Text("Now")
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+                    } else {
+                        VStack(spacing: 12) {
+                            Image(systemName: "bus")
+                                .font(.largeTitle)
+                                .foregroundColor(.blue)
+                            
+                            Text("No route available")
+                                .font(.headline)
+                            
+                            Text("A bus route will appear here once assigned.")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
-
-                            if !hasArrivedAtSchool {
-                                Text("Stops Away: \(stopsAway)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
                         }
-
-                        Spacer()
-
-                        Image(systemName: "bus.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.blue)
+                        .padding(.top, 60)
                     }
                 }
                 .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.blue.opacity(0.08))
-                .cornerRadius(20)
-
-                // Live update card
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Live Update")
-                        .font(.headline)
-
-                    if hasArrivedAtSchool {
-                        Text("The bus has arrived at school.")
-                            .font(.subheadline)
-                            .foregroundColor(.green)
-
-                    } else if rideStatus == .boarded {
-                        if let boardedTime = boardedTime {
-                            Text("\(childName) is on the bus and boarded at \(boardedTime).")
-                                .font(.subheadline)
-                                .foregroundColor(.green)
-                        } else {
-                            Text("\(childName) is on the bus.")
-                                .font(.subheadline)
-                                .foregroundColor(.green)
-                        }
-
-                    } else if rideStatus == .absent {
-                        Text("\(childName) was marked absent for pickup.")
-                            .font(.subheadline)
-                            .foregroundColor(.red)
-
-                    } else if stopsAway <= 3 {
-                        Text("The bus is \(stopsAway) stop\(stopsAway == 1 ? "" : "s") away from \(assignedStop).")
-                            .font(.subheadline)
-                            .foregroundColor(.orange)
-
-                    } else {
-                        Text("The bus is on the way to \(assignedStop).")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(20)
-                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
-
-                // Demo controls
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Demo Controls")
-                        .font(.headline)
-
-                    Button("Mark Child Boarded") {
-                        rideStatus = .boarded
-                        boardedTime = currentTimeString()
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(14)
-
-                    Button("Mark Child Absent") {
-                        rideStatus = .absent
-                        boardedTime = nil
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red)
-                    .foregroundColor(.white)
-                    .cornerRadius(14)
-
-                    Button("Reset Child Status") {
-                        rideStatus = .waiting
-                        boardedTime = nil
-                        hasArrivedAtSchool = false
-                        busStatus = "In Route"
-                        nextStop = "Pine Avenue"
-                        stopsAway = 3
-                        region.center = CLLocationCoordinate2D(latitude: 33.1581, longitude: -117.3506)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .foregroundColor(.black)
-                    .cornerRadius(14)
-
-                    Button("Move Bus Closer") {
-                        if stopsAway > 0 {
-                            stopsAway -= 1
-                            region.center.latitude += 0.0012
-                            region.center.longitude += 0.0010
-                        } else {
-                            hasArrivedAtSchool = true
-                            rideStatus = .arrivedAtSchool
-                            busStatus = "Arrived at School"
-                            nextStop = "School"
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(14)
-                }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(20)
-                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
             }
-            .padding()
-        }
-        .background(Color(.systemGroupedBackground))
-        .navigationTitle("Parent View")
-        .navigationBarTitleDisplayMode(.inline)
-        .onReceive(routeManager.$childOnBus) { isOnBus in
-            if isOnBus {
-                rideStatus = .boarded
-                boardedTime = currentTimeString()
-            }
-        }
-        .onReceive(routeManager.$showSchoolArrivalNotification) { arrived in
-            if arrived {
-                hasArrivedAtSchool = true
-                rideStatus = .arrivedAtSchool
-                busStatus = "Arrived at School"
-                nextStop = "School"
-                stopsAway = 0
-            }
-        }
-        .onReceive(routeManager.$route) { updatedRoute in
-            busStatus = updatedRoute.status
-            nextStop = updatedRoute.nextStop
-            region.center = updatedRoute.coordinate
+            .navigationTitle("Parent")
         }
     }
-
-    private func currentTimeString() -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: Date())
+    
+    private func updateRegion(for route: BusRoute) {
+        withAnimation {
+            region = MKCoordinateRegion(
+                center: route.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+            )
+        }
+    }
+    
+    private func mapItems(for route: BusRoute) -> [ParentMapItem] {
+        var items: [ParentMapItem] = [
+            ParentMapItem(
+                title: "Bus",
+                coordinate: route.coordinate,
+                type: .bus
+            )
+        ]
+        
+        if let childStop = route.stops.first(where: { $0.name == childStopName }) {
+            items.append(
+                ParentMapItem(
+                    title: "Your Stop",
+                    coordinate: childStop.coordinate,
+                    type: .childStop
+                )
+            )
+        }
+        
+        if let school = route.stops.last {
+            items.append(
+                ParentMapItem(
+                    title: "School",
+                    coordinate: school.coordinate,
+                    type: .school
+                )
+            )
+        }
+        
+        return items
+    }
+    
+    private func statusBackgroundColor(for status: String) -> Color {
+        switch status {
+        case "Completed":
+            return Color.green.opacity(0.15)
+        case "Paused":
+            return Color.orange.opacity(0.15)
+        case "Delayed":
+            return Color.red.opacity(0.15)
+        default:
+            return Color.blue.opacity(0.15)
+        }
+    }
+    
+    private func statusTextColor(for status: String) -> Color {
+        switch status {
+        case "Completed":
+            return .green
+        case "Paused":
+            return .orange
+        case "Delayed":
+            return .red
+        default:
+            return .blue
+        }
+    }
+    
+    private func circleColor(for index: Int, currentStopIndex: Int, completed: Bool) -> Color {
+        if completed {
+            return .green
+        } else if index < currentStopIndex {
+            return .green
+        } else if index == currentStopIndex {
+            return .blue
+        } else {
+            return .gray.opacity(0.35)
+        }
     }
 }
 
-#Preview {
-    ParentHomeView(
-        user: AppUser(name: "Taylor Parent", role: .parent),
-        onLogout: {}
-    )
-    .environmentObject(RouteSimulationManager(route: sampleRoute))
+struct ParentMapItem: Identifiable {
+    enum ItemType {
+        case bus
+        case childStop
+        case school
+    }
+    
+    let id = UUID()
+    let title: String
+    let coordinate: CLLocationCoordinate2D
+    let type: ItemType
+}
+
+func parentTrackingMessage(for route: BusRoute, childStopName: String) -> String {
+    if route.hasArrivedAtSchool {
+        return "Your child has arrived at school"
+    }
+    
+    guard let childIndex = route.stops.firstIndex(where: { $0.name == childStopName }) else {
+        return "Stop not found"
+    }
+    
+    if route.currentStopIndex < childIndex {
+        let remaining = childIndex - route.currentStopIndex
+        
+        switch remaining {
+        case 3:
+            return "Bus is 3 stops away"
+        case 2:
+            return "Bus is 2 stops away"
+        case 1:
+            return "Bus is 1 stop away"
+        case 0:
+            return "Bus is at your stop"
+        default:
+            return "Bus is on the way"
+        }
+    }
+    
+    if route.currentStopIndex == childIndex {
+        return "Bus is at your stop"
+    }
+    
+    let schoolIndex = route.stops.count - 1
+    let remainingToSchool = max(schoolIndex - route.currentStopIndex, 0)
+    
+    switch remainingToSchool {
+    case 0:
+        return "Your child has arrived at school"
+    case 1:
+        return "Your child is on the bus — 1 stop away from school"
+    default:
+        return "Your child is on the bus — \(remainingToSchool) stops away from school"
+    }
 }

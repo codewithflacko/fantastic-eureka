@@ -12,25 +12,26 @@ struct Stop: Identifiable {
     let id = UUID()
     let name: String
     let time: String
+    let coordinate: CLLocationCoordinate2D
 }
 
 struct BusRoute: Identifiable {
     let id = UUID()
     let name: String
     let driver: String
-    let status: String
-    let nextStop: String
-    let eta: String
-    let studentsOnBus: Int
+    var status: String
+    var nextStop: String
+    var eta: String
+    var studentsOnBus: Int
     let capacity: Int
-    let progress: Double
+    var progress: Double
     let stops: [Stop]
-    let coordinate: CLLocationCoordinate2D
-}
-
-enum StudentRideStatus: String {
-    case waiting = "Waiting"
-    case boarded = "Boarded"
-    case arrivedAtSchool = "Arrived at School"
-    case absent = "Absent"
+    var coordinate: CLLocationCoordinate2D
+    var currentStopIndex: Int = 0
+    var isCompleted: Bool = false
+    var hasArrivedAtSchool: Bool = false
+    
+    // NEW
+    var isPaused: Bool = false
+    var issueMessage: String? = nil
 }

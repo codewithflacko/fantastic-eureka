@@ -7,61 +7,102 @@
 
 import SwiftUI
 
-struct LoginView: View {
-    @State private var selectedUser: AppUser?
-
+struct LoginPage: View {
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Select User")
-                .font(.largeTitle)
-                .bold()
-                .padding(.top, 40)
-
-            Text("Choose a portal to continue")
-                .foregroundColor(.secondary)
-
-            Button {
-                selectedUser = parentUser
-            } label: {
-                Label("Login as Parent", systemImage: "person.fill")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue.opacity(0.15))
-                    .cornerRadius(12)
+        NavigationStack {
+            VStack(spacing: 24) {
+                Spacer()
+                
+                Image(systemName: "bus.fill")
+                    .font(.system(size: 64))
+                    .foregroundColor(.blue)
+                
+                Text("Magic Route")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                
+                Text("Choose your portal")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                
+                VStack(spacing: 16) {
+                    NavigationLink(destination: ParentPortalScreen()) {
+                        portalCard(
+                            title: "Parent",
+                            subtitle: "Track route progress and bus arrival",
+                            icon: "person.fill"
+                        )
+                    }
+                    
+                    NavigationLink(destination: DispatchPortal()) {
+                        portalCard(
+                            title: "Dispatch",
+                            subtitle: "Monitor active routes and route status",
+                            icon: "bus.doubledecker.fill"
+                        )
+                    }
+                    
+                    NavigationLink(destination: DriverPortal()) {
+                        portalCard(
+                            title: "Driver",
+                            subtitle: "View route details and assigned stops",
+                            icon: "steeringwheel"
+                        )
+                    }
+                }
+                
+                Spacer()
             }
-
-            Button {
-                selectedUser = dispatcherUser
-            } label: {
-                Label("Login as Dispatcher", systemImage: "person.3.fill")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.orange.opacity(0.15))
-                    .cornerRadius(12)
+            .padding()
+        }
+    }
+    
+    @ViewBuilder
+    private func portalCard(title: String, subtitle: String, icon: String) -> some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.blue)
+                .frame(width: 44, height: 44)
+                .background(Color.blue.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-
-            Button {
-                selectedUser = driverUser
-            } label: {
-                Label("Login as Driver", systemImage: "steeringwheel")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green.opacity(0.15))
-                    .cornerRadius(12)
-            }
-
+            
             Spacer()
+            
+            Image(systemName: "chevron.right")
+                .foregroundColor(.secondary)
         }
         .padding()
-        .navigationTitle("Login")
-        .fullScreenCover(item: $selectedUser) { user in
-            MainAppView(user: user)
-        }
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+    }
+}
+
+struct ParentPortalScreen: View {
+    @StateObject private var simulator = RouteSimulationManager(routes: mockRoutes)
+    
+    var body: some View {
+        ParentHomeView(simulator: simulator)
+            .onAppear {
+                simulator.startSimulation()
+            }
+            .onDisappear {
+                simulator.stopSimulation()
+            }
     }
 }
 
 #Preview {
-    NavigationStack {
-        LoginView()
-    }
+    LoginPage()
 }

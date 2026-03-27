@@ -8,13 +8,10 @@
 import SwiftUI
 
 @main
-struct MagicRouteApp: App {
-    @StateObject private var routeManager = RouteSimulationManager(route: sampleRoute)
-
+struct Magic_RouteApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(routeManager)
+            MainAppView()
         }
     }
 }
