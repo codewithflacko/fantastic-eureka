@@ -68,9 +68,13 @@ let mockRoutes: [BusRoute] = [
     BusRoute(
         name: "Route A",
         driver: "Ms. Taylor",
+        childName: "Ethan Walker",
+        grade: "4th Grade",
+        schoolName: "Lincoln High School",
+        pickupStopName: "Maple St Stop",
         status: "On Time",
         nextStop: "Maple St Stop",
-        eta: "12 min",
+        eta: "12 mins",
         studentsOnBus: 18,
         capacity: 30,
         progress: 0.2,
@@ -78,15 +82,19 @@ let mockRoutes: [BusRoute] = [
         coordinate: CLLocationCoordinate2D(latitude: 32.7140, longitude: -117.1630)
     ),
     BusRoute(
-        name: "Route B",
-        driver: "Mr. Johnson",
+        name: "Route 12",
+        driver: "Ms. Johnson",
+        childName: "Maya Thompson",
+        grade: "5th Grade",
+        schoolName: "Lincoln High School",
+        pickupStopName: "Maple St Stop",
         status: "On Time",
-        nextStop: "Sunset Dr Stop",
-        eta: "10 min",
-        studentsOnBus: 22,
-        capacity: 35,
-        progress: 0.1,
-        stops: routeBStops,
-        coordinate: CLLocationCoordinate2D(latitude: 32.7090, longitude: -117.1670)
+        nextStop: "Maple St Stop",
+        eta: "6 mins",
+        studentsOnBus: 18,
+        capacity: 30,
+        progress: 0.12,
+        stops: routeAStops,
+        coordinate: CLLocationCoordinate2D(latitude: 32.7157, longitude: -117.1611)
     )
 ]

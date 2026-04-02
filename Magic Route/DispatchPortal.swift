@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-struct DispatchPortal: View {
-    @StateObject private var simulator = RouteSimulationManager(routes: mockRoutes)
+struct DispatchPortalScreen: View {
+    @StateObject private var simulator = RouteSimulationManager()
 
     var body: some View {
         DispatcherView(simulator: simulator)
@@ -19,8 +19,4 @@ struct DispatchPortal: View {
                 simulator.stopSimulation()
             }
     }
-}
-
-#Preview {
-    DispatchPortal()
 }

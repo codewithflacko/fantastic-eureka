@@ -8,29 +8,22 @@
 import SwiftUI
 
 struct MainAppView: View {
-    @StateObject private var simulator = RouteSimulationManager(routes: mockRoutes)
-    
     var body: some View {
         TabView {
-            ParentHomeView(simulator: simulator)
+            ParentHomeViewScreen()
                 .tabItem {
-                    Label("Parent", systemImage: "person.fill")
+                    Label("Parent", systemImage: "person.2.fill")
                 }
-            
-            DispatcherView(simulator: simulator)
+
+            DispatchPortalScreen()
                 .tabItem {
-                    Label("Dispatch", systemImage: "bus.doubledecker.fill")
+                    Label("Dispatch", systemImage: "dot.radiowaves.left.and.right")
                 }
-        }
-        .onAppear {
-            simulator.startSimulation()
-        }
-        .onDisappear {
-            simulator.stopSimulation()
+
+            DriverPortalScreen()
+                .tabItem {
+                    Label("Driver", systemImage: "steeringwheel")
+                }
         }
     }
-}
-
-#Preview {
-    MainAppView()
 }
